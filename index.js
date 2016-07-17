@@ -7,6 +7,7 @@ var crypto = require('crypto')
 var inherits = require('util').inherits
 var EventEmitter = require('events').EventEmitter
 var debug = require('debug')('wudup')
+var Channel = require('./channel')
 
 inherits(Client, EventEmitter)
 
@@ -26,96 +27,80 @@ function Client (opts) {
     numberOfNodesPerKBucket: self._k
   })
 
-  self._wss.on('connection', onIncomingWs)
+  self._wss.on('connection', onConnection)
 
-  function onIncomingWs (ws) {
-    self._onIncomingWs(ws)
+  function onConnection (ws) {
+    self._setupChannel(ws)
   }
 
   for (var uri of opts.bootstrap) {
-    self._connect(uri)
+    self._setupChannel(new WebSocket(uri))
   }
 }
 
-Client.prototype._connect = function (uri) {
-  var self = this
-  var ws = new WebSocket(uri)
-
-  ws.on('open', onIncomingWs)
-
-  function onIncomingWs () {
-    self._onIncomingWs(ws)
-  }
-}
-
-Client.prototype._onIncomingWs = function (ws, uri) {
+Client.prototype._setupChannel = function (ws) {
   var self = this
 
-  var peer = {
-    ws: ws,
-    uri: uri,
-    id: undefined
-  }
+  var channel = new Channel(self.id, ws)
 
-  ws.on('message', onMessage)
+  channel.on('open', onOpen)
+  channel.on('message', onMessage)
+  channel.on('close', onClose)
+  channel.on('error', onError)
+
+  function onOpen () {
+    self.peers.add(channel)
+    self.emit('peer', channel.id)
+  }
 
   function onMessage (msg) {
-    self._onMessage(peer, msg)
+    self._onMessage(msg)
   }
 
-  self._send(peer, {
-    type: 'init',
-    from: self.id
-  })
+  function onClose () {
+    self.peers.remove(channel.id)
+  }
+
+  function onError (err) {
+    debug('Error', err)
+  }
 }
 
 Client.prototype.send = function (id, data) {
   var self = this
-  var closest = self.peers.closest(id)[0]
   var msg = {
-    type: 'relay',
     to: id,
     from: self.id,
     data: data
   }
-  self._send(closest, msg)
+  debug('SEND', JSON.stringify(msg.data))
+  self._send(msg)
 }
 
-Client.prototype._send = function (peer, msg) {
-  debug('SEND', JSON.stringify(msg))
-  peer.ws.send(JSON.stringify(msg))
+Client.prototype._send = function (msg) {
+  var self = this
+  var closest = self.peers.closest(msg.to)[0]
+  closest.ws.send(JSON.stringify(msg))
 }
 
-Client.prototype._onMessage = function (peer, msg) {
+Client.prototype._onMessage = function (msg) {
   var self = this
 
-  debug('RECV', msg)
+  msg.to = new Buffer(msg.to, 'hex')
+  msg.from = new Buffer(msg.from, 'hex')
 
-  msg = JSON.parse(msg)
-  var toID = 'to' in msg ? new Buffer(msg.to, 'hex') : undefined
-  var fromID = new Buffer(msg.from, 'hex')
-  var forMe = !toID || toID.equals(self.id)
-
-  if (forMe) {
-    if (msg.type === 'init') {
-      peer.id = fromID
-      self.peers.add(peer) // TODO fix bug
-      this.emit('peer', fromID)
-    } else if (msg.type === 'relay') {
-      self.emit('message', fromID, msg.data)
-    }
+  if (msg.to.equals(self.id)) {
+    debug('RECV', JSON.stringify(msg.data))
+    self.emit('message', msg.from, msg.data)
   } else {
-    var closest = self.peers.closest(toID)[0]
-    self._send(closest, msg)
+    self._send(msg)
   }
 }
 
-Client.prototype.destroy = function(cb) {
+Client.prototype.destroy = function (cb) {
   var self = this
-
-  for (var i = 0; i < self.peers.length; i++) {
-    self.peers[i].ws.close()
-  }
-
   self._wss.close(cb)
+  for (var i = 0; i < self.peers.length; i++) {
+    self.peers[i].destroy()
+  }
 }

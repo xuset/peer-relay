@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run -s standard && mocha test.js --use-strict",
-    "standard": "standard --global it describe"
+    "standard": "standard --global it --global describe"
   },
   "author": "",
   "license": "MIT",
