@@ -1,0 +1,21 @@
+{
+  "name": "wudup",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run -s standard && mocha test.js --use-strict",
+    "standard": "standard --global it describe"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^2.2.0",
+    "k-bucket": "^3.0.2",
+    "ws": "^1.1.1"
+  },
+  "devDependencies": {
+    "mocha": "^2.5.3",
+    "standard": "^7.1.2"
+  }
+}
