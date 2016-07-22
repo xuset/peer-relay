@@ -42,6 +42,8 @@ function Channel (localID, ws) {
 
 Channel.prototype._onOpen = function () {
   var self = this
+  if (self.destroyed) return
+
   self.ws.send(JSON.stringify(self.localID))
 }
 
@@ -51,33 +53,38 @@ Channel.prototype.send = function (data) {
   if (self.ws.readyState !== 1) throw new Error('WebSocket is not ready')
 
   var str = JSON.stringify(data)
-  // self._debug('SEND', str)
+  // self._debug('SEND', data.type, JSON.stringify(data.data))
   self.ws.send(str)
 }
 
 Channel.prototype._onMessage = function (data) {
   var self = this
+  if (self.destroyed) return
+
   var json = JSON.parse(data)
 
-  if (self.id === undefined) {
+  if (self.id == null) {
     self.id = new Buffer(json, 'hex')
     self._debug('OPEN')
     self.emit('open')
   } else {
-    // self._debug('RECV', data)
+    // self._debug('RECV', json.type, JSON.stringify(json.data))
     self.emit('message', json)
   }
 }
 
 Channel.prototype._onError = function (err) {
   var self = this
+  if (self.destroyed) return
+
   self._debug('ERROR', err)
   self.emit('error', err)
 }
 
 Channel.prototype._debug = function () {
   var self = this
-  var prepend = '[' + self.localID.toString('hex', 0, 2) + ']  '
+  var remote = self.id ? self.id.toString('hex', 0, 2) : '?'
+  var prepend = '[' + self.localID.toString('hex', 0, 2) + '->' + remote + ']  '
   arguments[0] = prepend + arguments[0]
   debug.apply(null, arguments)
 }

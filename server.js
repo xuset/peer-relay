@@ -11,11 +11,11 @@ var opts = {
 
 var c = new Client(opts)
 
-c.on('message', function (msg) {
-  debug('MESSAGE', msg)
+c.on('message', function (msg, from) {
+  debug('MESSAGE', from.toString('hex', 0, 2), msg)
 })
 
 c.on('peer', function (id) {
-  debug('PEER', id)
+  debug('PEER', id.toString('hex', 0, 2))
   c.send(id, 'HELLOWORLD')
 })
