@@ -8,6 +8,7 @@ var inherits = require('util').inherits
 var EventEmitter = require('events').EventEmitter
 var debug = require('debug')('wudup')
 var Channel = require('./channel')
+var simlog = require('./simlog')
 
 inherits(Client, EventEmitter)
 
@@ -34,9 +35,11 @@ function Client (opts) {
 
   self.peers.on('removed', function () {
     // TODO handle removed event
+    simlog('peer-removed', self.id)
   })
 
   self._debug('Client(%s)', JSON.stringify(opts))
+  simlog('init', self.id)
 
   for (var uri of opts.bootstrap) {
     self._setupChannel(new WebSocket(uri))
@@ -71,6 +74,8 @@ Client.prototype._setupChannel = function (ws) {
     }
 
     self.peers.add(channel)
+
+    simlog('peer-connect', self.id, channel.id)
 
     self._send({
       type: 'findPeers',
@@ -147,6 +152,8 @@ Client.prototype._send = function (msg) {
   if (msg.hops == null) msg.hops = 1
   if (msg.nonce == null) msg.nonce = Math.floor(1e15 * Math.random())
 
+  simlog('send', self.id, msg)
+
   var closest = self.peers.closest(msg.to)[0]
   if (closest != null) {
     // TODO BUG Sometimes the WS on closest in not in the ready state
@@ -164,6 +171,7 @@ Client.prototype._onMessage = function (msg) {
   msg.from = new Buffer(msg.from, 'hex')
 
   if (msg.to.equals(self.id)) {
+    simlog('recv', self.id, msg)
     if (msg.type === 'user') {
       self._debug('RECV', msg.from.toString('hex', 0, 2), JSON.stringify(msg.data))
       self.emit('message', msg.data, msg.from)

@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "mocha": "^2.5.3",
-    "standard": "^7.1.2"
+    "standard": "^7.1.2",
+    "stats-lite": "^2.0.3"
   }
 }
