@@ -56,7 +56,7 @@ describe('End to End', function () {
       c2.send(id, 'TEST2')
     })
 
-    c1.on('message', function (id, msg) {
+    c1.on('message', function (msg, id) {
       assert.ok(id.equals(c2.id))
       assert.equal(msg, 'TEST2')
       assert.ok(count <= 2)
@@ -64,7 +64,7 @@ describe('End to End', function () {
       if (count === 2) done()
     })
 
-    c2.on('message', function (id, msg) {
+    c2.on('message', function (msg, id) {
       assert.ok(id.equals(c1.id))
       assert.equal(msg, 'TEST1')
       assert.ok(count <= 2)
@@ -84,7 +84,7 @@ describe('End to End', function () {
       c1.send(c3.id, 'TEST')
     })
 
-    c3.on('message', function (id, msg) {
+    c3.on('message', function (msg, id) {
       assert.ok(id.equals(c1.id))
       assert.equal(msg, 'TEST')
       done()
@@ -105,6 +105,7 @@ describe('End to End', function () {
         // c1.connect(c3.id)
       } else if (id.equals(c3.id)) {
         c1PeerEvent = true
+        c1.disconnect(c2.id)
         c1.send(c3.id, 'TEST')
       } else {
         assert.ok(false)
@@ -116,7 +117,7 @@ describe('End to End', function () {
       if (id.equals(c1.id)) c3PeerEvent = true
     })
 
-    c3.on('message', function (id, msg) {
+    c3.on('message', function (msg, id) {
       assert.ok(id.equals(c1.id))
       assert.equal(msg, 'TEST')
       assert.ok(c1PeerEvent)

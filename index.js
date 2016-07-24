@@ -18,17 +18,22 @@ function Client (opts) {
   var self = this
 
   self._wss = new WebSocketServer({ port: opts.port })
-  self.uri = 'ws://localhost:' + opts.port
+  self.maxHops = 20
+  self.uri = 'ws://localhost:' + opts.port // TODO wrong uri when port=0
   self.id = crypto.randomBytes(20)
   self.pending = {}
   self.destroyed = false
   self.peers = new KBucket({
     localNodeId: self.id,
-    numberOfNodesPerKBucket: 2
+    numberOfNodesPerKBucket: 20
   })
   self.canidates = new KBucket({ // TODO expire canidates after period
     localNodeId: self.id,
     numberOfNodesPerKBucket: 20
+  })
+
+  self.peers.on('removed', function () {
+    // TODO handle removed event
   })
 
   self._debug('Client(%s)', JSON.stringify(opts))
@@ -67,12 +72,13 @@ Client.prototype._setupChannel = function (ws) {
 
     self.peers.add(channel)
 
-    channel.send({
+    self._send({
       type: 'findPeers',
       to: channel.id,
       from: self.id,
       data: self.id
     })
+
     self.emit('peer', channel.id)
   }
 
@@ -112,6 +118,14 @@ Client.prototype.connect = function (id) {
   })
 }
 
+Client.prototype.disconnect = function (id) {
+  var self = this
+  if (self.destroyed) return
+  if (!self.peers.get(id)) return
+
+  self.peers.get(id).destroy()
+}
+
 Client.prototype.send = function (id, data) {
   var self = this
   if (self.destroyed) return
@@ -130,8 +144,12 @@ Client.prototype._send = function (msg) {
   var self = this
   if (self.destroyed) return
 
+  if (msg.hops == null) msg.hops = 1
+  if (msg.nonce == null) msg.nonce = Math.floor(1e15 * Math.random())
+
   var closest = self.peers.closest(msg.to)[0]
   if (closest != null) {
+    // TODO BUG Sometimes the WS on closest in not in the ready state
     closest.send(msg)
   } else {
     self._debug('ERROR', 'Failed to send message, not connected to any peers', msg)
@@ -161,7 +179,9 @@ Client.prototype._onMessage = function (msg) {
       self._debug('Received message with unknown type "%s"', msg.type, msg)
     }
   } else {
-    self._send(msg)
+    msg.hops++
+    if (msg.hops <= self.maxHops) self._send(msg)
+    else self._debug('Max hops exceeded', msg)
   }
 }
 
@@ -188,12 +208,16 @@ Client.prototype._onFoundPeers = function (msg) {
 
 Client.prototype._onHandshakeOffer = function (msg) {
   var self = this
-  self._send({
-    type: 'handshake-answer',
-    to: msg.from,
-    from: self.id,
-    data: self.uri
-  })
+  if (self.peers.get(msg.from)) return
+
+  if (self.pending[msg.from] == null || msg.from.compare(self.id) < 0) {
+    self._send({
+      type: 'handshake-answer',
+      to: msg.from,
+      from: self.id,
+      data: self.uri
+    })
+  }
 }
 
 Client.prototype._onHandshakeAnswer = function (msg) {
