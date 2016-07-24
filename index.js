@@ -8,6 +8,7 @@ var inherits = require('util').inherits
 var EventEmitter = require('events').EventEmitter
 var debug = require('debug')('wudup')
 var Channel = require('./channel')
+var Router = require('./router')
 var simlog = require('./simlog')
 
 inherits(Client, EventEmitter)
@@ -19,7 +20,6 @@ function Client (opts) {
   var self = this
 
   self._wss = new WebSocketServer({ port: opts.port })
-  self.maxHops = 20
   self.uri = 'ws://localhost:' + opts.port // TODO wrong uri when port=0
   self.id = crypto.randomBytes(20)
   self.pending = {}
@@ -32,11 +32,7 @@ function Client (opts) {
     localNodeId: self.id,
     numberOfNodesPerKBucket: 20
   })
-
-  self.peers.on('removed', function () {
-    // TODO handle removed event
-    simlog('peer-removed', self.id)
-  })
+  self.router = new Router(self.peers, self.id)
 
   self._debug('Client(%s)', JSON.stringify(opts))
   simlog('init', self.id)
@@ -46,10 +42,21 @@ function Client (opts) {
   }
 
   self._wss.on('connection', onConnection)
+  self.router.on('message', onMessage)
+  self.peers.on('removed', onRemoved)
 
   function onConnection (ws) {
     if (self.destroyed) ws.close()
     else self._setupChannel(ws)
+  }
+
+  function onMessage (msg, from) {
+    self._onMessage(msg, from)
+  }
+
+  function onRemoved (channel) {
+    channel.destroy()
+    simlog('peer-removed', self.id)
   }
 }
 
@@ -60,7 +67,6 @@ Client.prototype._setupChannel = function (ws) {
   var channel = new Channel(self.id, ws)
 
   channel.on('open', onOpen)
-  channel.on('message', onMessage)
   channel.on('close', onClose)
   channel.on('error', onError)
 
@@ -77,18 +83,12 @@ Client.prototype._setupChannel = function (ws) {
 
     simlog('peer-connect', self.id, channel.id)
 
-    self._send({
+    self.router.send(channel.id, {
       type: 'findPeers',
-      to: channel.id,
-      from: self.id,
-      data: self.id
+      data: self.id.toString('hex')
     })
 
     self.emit('peer', channel.id)
-  }
-
-  function onMessage (msg) {
-    self._onMessage(msg)
   }
 
   function onClose () {
@@ -116,10 +116,8 @@ Client.prototype.connect = function (id) {
 
   self._debug('Connecting to id=%s', id.toString('hex', 0, 2))
 
-  self._send({
-    type: 'handshake-offer',
-    to: id,
-    from: self.id
+  self.router.send(id, {
+    type: 'handshake-offer'
   })
 }
 
@@ -135,101 +133,69 @@ Client.prototype.send = function (id, data) {
   var self = this
   if (self.destroyed) return
 
-  var msg = {
+  // self._debug('SEND', id.toString('hex', 0, 2), JSON.stringify(data))
+  self.router.send(id, {
     type: 'user',
-    to: id,
-    from: self.id,
     data: data
-  }
-  self._debug('SEND', msg.to.toString('hex', 0, 2), JSON.stringify(msg.data))
-  self._send(msg)
+  })
 }
 
-Client.prototype._send = function (msg) {
+Client.prototype._onMessage = function (msg, from) {
   var self = this
   if (self.destroyed) return
 
-  if (msg.hops == null) msg.hops = 1
-  if (msg.nonce == null) msg.nonce = Math.floor(1e15 * Math.random())
-
-  simlog('send', self.id, msg)
-
-  var closest = self.peers.closest(msg.to)[0]
-  if (closest != null) {
-    // TODO BUG Sometimes the WS on closest in not in the ready state
-    closest.send(msg)
+  if (msg.type === 'user') {
+    // self._debug('RECV', from.toString('hex', 0, 2), JSON.stringify(msg.data))
+    self.emit('message', msg.data, from)
+  } else if (msg.type === 'findPeers') {
+    self._onFindPeers(msg, from)
+  } else if (msg.type === 'foundPeers') {
+    self._onFoundPeers(msg, from)
+  } else if (msg.type === 'handshake-offer') {
+    self._onHandshakeOffer(msg, from)
+  } else if (msg.type === 'handshake-answer') {
+    self._onHandshakeAnswer(msg, from)
   } else {
-    self._debug('ERROR', 'Failed to send message, not connected to any peers', msg)
+    self._debug('Received message with unknown type "%s"', msg.type, msg)
   }
 }
 
-Client.prototype._onMessage = function (msg) {
-  var self = this
-  if (self.destroyed) return
-
-  msg.to = new Buffer(msg.to, 'hex')
-  msg.from = new Buffer(msg.from, 'hex')
-
-  if (msg.to.equals(self.id)) {
-    simlog('recv', self.id, msg)
-    if (msg.type === 'user') {
-      self._debug('RECV', msg.from.toString('hex', 0, 2), JSON.stringify(msg.data))
-      self.emit('message', msg.data, msg.from)
-    } else if (msg.type === 'findPeers') {
-      self._onFindPeers(msg)
-    } else if (msg.type === 'foundPeers') {
-      self._onFoundPeers(msg)
-    } else if (msg.type === 'handshake-offer') {
-      self._onHandshakeOffer(msg)
-    } else if (msg.type === 'handshake-answer') {
-      self._onHandshakeAnswer(msg)
-    } else {
-      self._debug('Received message with unknown type "%s"', msg.type, msg)
-    }
-  } else {
-    msg.hops++
-    if (msg.hops <= self.maxHops) self._send(msg)
-    else self._debug('Max hops exceeded', msg)
-  }
-}
-
-Client.prototype._onFindPeers = function (msg) {
+Client.prototype._onFindPeers = function (msg, from) {
   var self = this
   var target = new Buffer(msg.data, 'hex')
   var closest = self.canidates.closest(target, 20)
-  self._send({
+  self.router.send(from, {
     type: 'foundPeers',
-    to: msg.from,
-    from: self.id,
-    data: closest
+    data: closest.map((e) => e.id.toString('hex'))
   })
 }
 
 Client.prototype._onFoundPeers = function (msg) {
   var self = this
   for (var canidate of msg.data) {
-    canidate.id = new Buffer(canidate.id, 'hex')
-    self.canidates.add(canidate)
+    self.canidates.add({
+      id: new Buffer(canidate, 'hex')
+    })
   }
   self._populate()
 }
 
-Client.prototype._onHandshakeOffer = function (msg) {
+Client.prototype._onHandshakeOffer = function (msg, from) {
   var self = this
-  if (self.peers.get(msg.from)) return
+  if (self.peers.get(from)) return
 
-  if (self.pending[msg.from] == null || msg.from.compare(self.id) < 0) {
-    self._send({
+  if (self.pending[from] == null || from.compare(self.id) < 0) {
+    self.pending[from] = true
+    self.router.send(from, {
       type: 'handshake-answer',
-      to: msg.from,
-      from: self.id,
       data: self.uri
     })
   }
 }
 
-Client.prototype._onHandshakeAnswer = function (msg) {
+Client.prototype._onHandshakeAnswer = function (msg, from) {
   var self = this
+  if (self.peers.get(from)) return
   self._setupChannel(new WebSocket(msg.data))
 }
 

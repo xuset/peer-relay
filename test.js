@@ -125,4 +125,42 @@ describe('End to End', function () {
       done()
     })
   })
+
+  // it('relay chain', function (done) {
+  //   var peers = []
+  //   for (var i = 0; i < 10; i++) {
+  //     peers.push(startClient({
+  //       port: 8000 + i,
+  //       bootstrap: i === 0 ? [] : ['ws://localhost:' + (8000 + i - 1)]
+  //     }))
+  //   }
+
+  //   var first = peers[0]
+  //   var last = peers[peers.length - 1]
+
+  //   last.on('message', function (msg, id) {
+  //     assert.ok(id.equals(first.id))
+  //     assert.equal('TEST', msg)
+  //     done()
+  //   })
+
+  //   onBootstrap(peers, function () {
+  //     first.send(last.id, 'TEST')
+  //   })
+  // })
 })
+
+// function onBootstrap (peers, cb) {
+//   for (var p of peers) {
+//     p.on('peer', function () {
+//       if (isBootstrapped()) cb()
+//     })
+//   }
+//
+//   function isBootstrapped () {
+//     for (var p of peers) {
+//       if (p.peers.count() === 0) return false
+//     }
+//     return true
+//   }
+// }

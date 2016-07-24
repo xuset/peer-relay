@@ -53,7 +53,6 @@ Channel.prototype.send = function (data) {
   if (self.ws.readyState !== 1) throw new Error('WebSocket is not ready')
 
   var str = JSON.stringify(data)
-  // self._debug('SEND', data.type, JSON.stringify(data.data))
   self.ws.send(str)
 }
 
@@ -68,7 +67,6 @@ Channel.prototype._onMessage = function (data) {
     self._debug('OPEN')
     self.emit('open')
   } else {
-    // self._debug('RECV', json.type, JSON.stringify(json.data))
     self.emit('message', json)
   }
 }

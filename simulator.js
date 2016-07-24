@@ -4,7 +4,7 @@ var spawn = require('child_process').spawn
 var statsLite = require('stats-lite')
 
 var stats = {
-  peers: [],
+  peers: {},
   hops: [],
   sent: [],
   received: [],
@@ -16,7 +16,7 @@ function simulate (opts) {
   for (var i = 0; i < opts.peers; i++) {
     var port = 8000 + i
     var bootstrap = i === 0 ? null : 'ws://localhost:8000'
-    setTimeout(spawnPeer, i * 2000, port, bootstrap)
+    setTimeout(spawnPeer, i * 500, port, bootstrap)
   }
 
   setInterval(function () { printStats() }, 2000)
@@ -34,6 +34,7 @@ function printStats () {
   function arrayStats (array) {
     return 'avg=' + statsLite.mean(array) + '  stdev=' + statsLite.stdev(array) + '  99percentile=' + statsLite.percentile(array, 0.99)
   }
+  console.log('PEER', JSON.stringify(stats.peers, null, 2))
   var peerCount = Object.keys(stats.peers).map(function (e) { return stats.peers[e].length })
   console.log('PEER COUNT', peerCount)
   console.log('Peers - %s', Object.keys(stats.peers).length)
@@ -92,7 +93,7 @@ function onLog (message) {
 }
 
 function onLogInit (message) {
-  stats.peers[message.resource] = []
+  stats.peers[message.resource.toString('hex')] = []
 }
 
 function onLogSend (message) {
@@ -106,7 +107,7 @@ function onLogRecv (message) {
   var to = new Buffer(message.data.to, 'hex')
   if (Buffer.isBuffer(message.resource) && to.equals(message.resource)) {
     stats.received.push(message.data.nonce)
-    stats.hops.push(message.data.hops)
+    stats.hops.push(message.data.path.length)
   }
 }
 
@@ -115,7 +116,7 @@ function onLogPeerRemoved (message) {
 }
 
 function onLogPeerConnect (message) {
-  stats.peers[message.resource].push(new Buffer(message.data, 'hex'))
+  stats.peers[message.resource.toString('hex')].push((new Buffer(message.data, 'hex')).toString('hex', 0, 2))
 }
 
 if (require.main === module) {
