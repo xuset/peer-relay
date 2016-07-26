@@ -43,6 +43,7 @@ function printStats () {
   console.log('Messages:')
   console.log('    Sent     - %s', stats.sent.length)
   console.log('    Received - %s', stats.received.length)
+  console.log('    Failed   - %s%%', (100 - 100 * stats.received.length / stats.sent.length).toFixed(1))
   console.log('    Hops     - %s', arrayStats(stats.hops))
   console.log('---------')
 }
@@ -64,7 +65,7 @@ function attach (stream) {
         if (message.resource.type === 'Buffer') message.resource = new Buffer(message.resource, 'hex')
         onLog(message)
       } else {
-        console.error(line.toString('utf8'))
+        // console.error(line.toString('utf8'))
       }
 
       buffer.copy(buffer, 0, lineIndex + 1, size)

@@ -19,6 +19,8 @@ function Router (channels, id) {
   self.touched = {}
   self.channelListeners = {}
 
+  self.paths = {}
+
   self.channels.on('added', onChannelAdded)
   self.channels.on('removed', onChannelRemoved)
 
@@ -45,6 +47,8 @@ Router.prototype.send = function (id, data) {
     data: data
   }
 
+  if (id in self.paths) msg.preferred = self.paths[id]
+
   self.touched[msg.nonce] = true
 
   debugMsg('SEND', self.id, msg)
@@ -56,15 +60,20 @@ Router.prototype.send = function (id, data) {
 Router.prototype._send = function (msg) {
   var self = this
 
-  if (msg.path.length >= self.maxHops) throw new Error('Max hops exceeded nonce=' + msg.nonce)
+  if (msg.path.length >= self.maxHops) return // throw new Error('Max hops exceeded nonce=' + msg.nonce)
   if (self.channels.count() === 0) throw new Error('Not connected to any peers')
 
   msg.path.push(self.id.toString('hex'))
 
   var target = new Buffer(msg.to, 'hex')
   var closests = self.channels.closest(target, 20)
-    .filter((element) => msg.path.indexOf(element.id.toString('hex')) === -1)
+    .filter((c) => msg.path.indexOf(c.id.toString('hex')) === -1)
     .filter((_, index) => index < self.concurrency)
+
+  if (msg.to in self.paths) {
+    var preferred = self.channels.closest(new Buffer(self.paths[msg.to], 'hex'), 1)[0]
+    if (preferred != null && closests.indexOf(preferred) === -1) closests.unshift(preferred)
+  }
 
   for (var channel of closests) {
     // TODO BUG Sometimes the WS on closest in not in the ready state
@@ -79,13 +88,15 @@ Router.prototype._onMessage = function (msg) {
   if (msg.nonce in self.touched) return
   self.touched[msg.nonce] = true
 
+  self.paths[msg.from] = msg.path[msg.path.length - 1]
+
   msg.to = new Buffer(msg.to, 'hex')
   msg.from = new Buffer(msg.from, 'hex')
 
   if (msg.to.equals(self.id)) {
-    self.emit('message', msg.data, msg.from)
     debugMsg('RECV', self.id, msg)
     simlog('recv', self.id, msg)
+    self.emit('message', msg.data, msg.from)
   } else {
     self._send(msg)
     debugMsg('RELAY', self.id, msg)
