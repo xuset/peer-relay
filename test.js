@@ -73,6 +73,31 @@ describe('End to End', function () {
     })
   })
 
+  it('send message before connect', function (done) {
+    var c1 = startClient({ port: 8001, bootstrap: [] })
+    var c2 = startClient({ port: 8002, bootstrap: ['ws://localhost:8001'] })
+    var count = 0
+
+    c1.on('message', function (msg, id) {
+      assert.ok(id.equals(c2.id))
+      assert.equal(msg, 'TEST2')
+      assert.ok(count <= 2)
+      count++
+      if (count === 2) done()
+    })
+
+    c2.on('message', function (msg, id) {
+      assert.ok(id.equals(c1.id))
+      assert.equal(msg, 'TEST1')
+      assert.ok(count <= 2)
+      count++
+      if (count === 2) done()
+    })
+
+    c2.send(c1.id, 'TEST2')
+    c1.send(c2.id, 'TEST1')
+  })
+
   it('relay message', function (done) {
     // c1 <-> c2 <-> c3
     var c2 = startClient({ port: 8002, bootstrap: [] })

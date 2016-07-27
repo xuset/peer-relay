@@ -13,13 +13,12 @@ function Router (channels, id) {
   var self = this
   self.id = id
   self.channels = channels
-
   self.concurrency = 2
   self.maxHops = 20
   self.touched = {}
   self.channelListeners = {}
-
   self.paths = {}
+  self.queue = []
 
   self.channels.on('added', onChannelAdded)
   self.channels.on('removed', onChannelRemoved)
@@ -47,8 +46,6 @@ Router.prototype.send = function (id, data) {
     data: data
   }
 
-  if (id in self.paths) msg.preferred = self.paths[id]
-
   self.touched[msg.nonce] = true
 
   debugMsg('SEND', self.id, msg)
@@ -61,7 +58,10 @@ Router.prototype._send = function (msg) {
   var self = this
 
   if (msg.path.length >= self.maxHops) return // throw new Error('Max hops exceeded nonce=' + msg.nonce)
-  if (self.channels.count() === 0) throw new Error('Not connected to any peers')
+
+  if (self.channels.count() === 0) {
+    self.queue.push(msg)
+  }
 
   msg.path.push(self.id.toString('hex'))
 
@@ -112,6 +112,8 @@ Router.prototype._onChannelAdded = function (channel) {
   function listener (msg) {
     self._onMessage(msg)
   }
+
+  while (self.queue.length > 0) self._send(self.queue.shift())
 }
 
 Router.prototype._onChannelRemoved = function (channel) {
