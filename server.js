@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 var process = require('process')
-var Client = require('.')
-var debug = require('debug')('wudup')
+var Client = require('./client')
 
 var opts = {
   port: parseInt(process.argv[2]),
@@ -11,11 +10,6 @@ var opts = {
 
 var c = new Client(opts)
 
-c.on('message', function (msg, from) {
-  debug('MESSAGE', from.toString('hex', 0, 2), msg)
-})
-
 c.on('peer', function (id) {
-  debug('PEER', id.toString('hex', 0, 2))
-  c.send(id, 'HELLOWORLD')
+  console.error('PEER', id.toString('hex', 0, 2))
 })
