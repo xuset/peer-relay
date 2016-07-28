@@ -1,5 +1,5 @@
 var assert = require('assert')
-var Client = require('./client')
+var Client = require('./lib/client')
 
 describe('End to End', function () {
   var clients = []

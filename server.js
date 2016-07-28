@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var process = require('process')
-var Client = require('./client')
+var Client = require('./lib/client')
 
 var opts = {
   port: parseInt(process.argv[2]),
