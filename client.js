@@ -20,7 +20,6 @@ function Client (opts) {
   var self = this
 
   self._wss = new WebSocketServer({ port: opts.port })
-  self.uri = 'ws://localhost:' + opts.port // TODO wrong uri when port=0
   self.id = crypto.randomBytes(20)
   self.pending = {}
   self.destroyed = false
@@ -42,8 +41,14 @@ function Client (opts) {
   }
 
   self._wss.on('connection', onConnection)
+  self._wss.on('listening', onListen)
   self.router.on('message', onMessage)
   self.peers.on('removed', onRemoved)
+
+  function onListen () {
+    if (self.destroyed) return
+    self.uri = 'ws://localhost:' + (opts.port || self._wss._server.address().port)
+  }
 
   function onConnection (ws) {
     if (self.destroyed) ws.close()

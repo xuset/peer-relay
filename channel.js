@@ -50,6 +50,7 @@ Channel.prototype._onOpen = function () {
 Channel.prototype.send = function (data) {
   var self = this
   if (self.destroyed) return
+  if (self.ws.readyState === 2) return // readyState === CLOSING
   if (self.ws.readyState !== 1) throw new Error('WebSocket is not ready')
 
   var str = JSON.stringify(data)

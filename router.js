@@ -98,8 +98,8 @@ Router.prototype._onMessage = function (msg) {
     simlog('recv', self.id, msg)
     self.emit('message', msg.data, msg.from)
   } else {
-    self._send(msg)
     debugMsg('RELAY', self.id, msg)
+    self._send(msg)
   }
 }
 
