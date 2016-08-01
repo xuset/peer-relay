@@ -12,9 +12,11 @@
   "dependencies": {
     "debug": "^2.2.0",
     "k-bucket": "^3.0.2",
+    "simple-peer": "^6.0.4",
     "ws": "^1.1.1"
   },
   "devDependencies": {
+    "electron-webrtc": "^0.2.7",
     "mocha": "^2.5.3",
     "standard": "^7.1.2",
     "stats-lite": "^2.0.3"
