@@ -4,10 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run -s standard && mocha test.js --use-strict",
-    "make": "browserify index.js -s Wudup -o bundle.js -i process -i ws -i electron-webrtc",
-    "standard": "standard --global it --global describe",
+    "test": "standard && mocha test.js --use-strict --timeout 10000",
+    "bundle": "browserify -r .:wudup -r bittorrent-dht -d -o bundle.js -i process -i ws -i electron-webrtc",
+    "standard": "standard",
     "browserify": "browserify"
+  },
+  "standard": {
+    "globals": [ "it", "describe" ]
   },
   "author": "",
   "license": "MIT",
