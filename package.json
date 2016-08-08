@@ -1,18 +1,19 @@
 {
-  "name": "wudup",
+  "name": "peer-relay",
   "version": "0.0.0",
-  "description": "",
+  "description": "relay messages through peers in a network",
   "main": "index.js",
   "scripts": {
     "test": "standard && mocha test.js --use-strict --timeout 10000",
-    "bundle": "browserify -r .:wudup -r bittorrent-dht -d -o bundle.js -i process -i ws -i electron-webrtc",
+    "bundle": "browserify index.js -s PeerRelay -d -o bundle.js -i process -i ws -i electron-webrtc",
     "standard": "standard",
     "browserify": "browserify"
   },
   "standard": {
     "globals": [ "it", "describe" ]
   },
-  "author": "",
+  "repository": "https://github.com/xuset/peer-relay",
+  "author": "Austin Middleton",
   "license": "MIT",
   "dependencies": {
     "debug": "^2.2.0",
