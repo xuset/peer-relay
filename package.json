@@ -1,6 +1,6 @@
 {
   "name": "peer-relay",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "relay messages through peers in a network",
   "main": "index.js",
   "bin": "server.js",
@@ -13,7 +13,10 @@
     "start": "server.js"
   },
   "standard": {
-    "globals": [ "it", "describe" ]
+    "globals": [
+      "it",
+      "describe"
+    ]
   },
   "repository": "https://github.com/xuset/peer-relay",
   "author": "Austin Middleton",
