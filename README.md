@@ -27,7 +27,7 @@ Forms a direct connection with the given peer. `id` is the id of the peer to con
 
 ### `peer.disconnect(id)`
 
-Disconnect the a currently connected peer with `id`. 
+Disconnect the a currently connected peer with `id`.
 
 ### `peer.send(id, data)`
 
@@ -39,7 +39,9 @@ Destroy the peer and free it's resources. An optional callback can be specified 
 
 ### `var socket = new PeerRelay.WGram([opts])`
 
-Creates a new [dgram](https://nodejs.org/api/dgram.html) like socket that uses peer-relay to send messages between peers. This allows for peer-relay to be used by programs that expect the dgram interface. `opts` is the same as the `opts` for `new PeerRelay([opts])`. The returned object is tries to match the interface provided by dgram's [Socket](https://nodejs.org/api/dgram.html#dgram_class_dgram_socket)
+Creates a new [dgram](https://nodejs.org/api/dgram.html) like socket that uses peer-relay to send messages between peers. This allows for peer-relay to be used by programs that expect the dgram interface. This method accepts the same arguments as the PeerRelay constructor. The returned object tries to match the interface provided by dgram's [Socket](https://nodejs.org/api/dgram.html#dgram_class_dgram_socket).
+
+`socket.peer` references the underlying PeerRelay instance.
 
 ## Events
 
