@@ -1,5 +1,8 @@
 var assert = require('assert')
 var Client = require('./lib/client')
+var wrtc = require('electron-webrtc')()
+
+wrtc.on('error', function (err) { console.error(err, err.stack) })
 
 describe('End to End', function () {
   var clients = []
@@ -147,6 +150,24 @@ describe('End to End', function () {
       assert.equal(msg, 'TEST')
       assert.ok(c1PeerEvent)
       assert.ok(c3PeerEvent)
+      done()
+    })
+  })
+
+  it('webrtc connect and send message', function (done) {
+    // c1 <-> c2 <-> c3
+    var c2 = startClient({ port: 8002, bootstrap: [] })
+    var c1 = startClient({ wrtc: wrtc, bootstrap: ['ws://localhost:8002'] })
+    var c3 = startClient({ wrtc: wrtc, bootstrap: ['ws://localhost:8002'] })
+
+    c1.on('peer', function (id) {
+      assert.ok(id.equals(c2.id) || id.equals(c3.id))
+      if (id.equals(c3.id)) c1.send(c3.id, 'TEST')
+    })
+
+    c3.on('message', function (msg, id) {
+      assert.ok(id.equals(c1.id))
+      assert.equal(msg, 'TEST')
       done()
     })
   })

@@ -6,11 +6,11 @@
   "bin": "server.js",
   "scripts": {
     "test": "standard && mocha test.js --use-strict --timeout 10000",
-    "bundle": "browserify index.js -s PeerRelay -d -o bundle.js -i process -i ws -i electron-webrtc",
+    "bundle": "browserify index.js -s PeerRelay -d -o bundle.js -i ws",
     "prepublish": "npm run -s bundle",
     "standard": "standard",
     "browserify": "browserify",
-    "start": "server.js"
+    "start": "./server.js"
   },
   "standard": {
     "globals": [

@@ -14,6 +14,7 @@ Creates a new peer that becomes apart of the relay network
 The following fields can be specified within `opts`:
  * port - The port for the web socket server to listen on
  * bootstrap - an array of web socket urls to peers already connected to the network
+ * wrtc - custom webrtc implementation
 
 `port` can only be specified if the peer is running nodejs since start a WebSocket server is not possible in a browser. Every peer should specify at least on bootstrap peer (unless that peer is the first/only peer in the network)
 
