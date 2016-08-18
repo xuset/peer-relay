@@ -38,7 +38,7 @@ Send `data` to the peer with and id equal to `id`. The peer does not have to be 
 
 Destroy the peer and free it's resources. An optional callback can be specified and will be called when all the resources are freed.
 
-### `var socket = new PeerRelay.WGram([opts])`
+### `var socket = new PeerRelay.Socket([opts])`
 
 Creates a new [dgram](https://nodejs.org/api/dgram.html) like socket that uses peer-relay to send messages between peers. This allows for peer-relay to be used by programs that expect the dgram interface. This method accepts the same arguments as the PeerRelay constructor. The returned object tries to match the interface provided by dgram's [Socket](https://nodejs.org/api/dgram.html#dgram_class_dgram_socket).
 
