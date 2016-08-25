@@ -1,6 +1,6 @@
 {
   "name": "peer-relay",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "relay messages through peers in a network",
   "main": "index.js",
   "bin": "server.js",
