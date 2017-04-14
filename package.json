@@ -24,13 +24,13 @@
   "dependencies": {
     "debug": "^2.2.0",
     "k-bucket": "^3.0.2",
-    "simple-peer": "^6.0.4",
-    "ws": "^1.1.1"
+    "simple-peer": "^8.1.0",
+    "ws": "^2.2.3"
   },
   "devDependencies": {
-    "browserify": "^13.1.0",
-    "electron-webrtc": "^0.2.7",
-    "mocha": "^2.5.3",
-    "standard": "^7.1.2"
+    "browserify": "^14.3.0",
+    "electron-webrtc": "^0.3.0",
+    "mocha": "^3.2.0",
+    "standard": "^10.0.2"
   }
 }
