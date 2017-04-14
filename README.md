@@ -1,5 +1,7 @@
 # peer-relay
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/xuset/peer-relay.svg)](https://greenkeeper.io/)
+
 [![Build Status](https://travis-ci.org/xuset/peer-relay.svg?branch=master)](https://travis-ci.org/xuset/peer-relay)
 [![npm version](https://badge.fury.io/js/peer-relay.svg)](https://badge.fury.io/js/peer-relay)
 
