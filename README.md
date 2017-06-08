@@ -66,7 +66,7 @@ Creates a new [dgram](https://nodejs.org/api/dgram.html) like socket that uses p
 
 There are a few differences to this socket than dgram's. Mainly, ip addresses are replaced by peer IDs.
 
-### `socket.send(buffer, offset, length, port, peerRealyID, [cb])`
+### `socket.send(buffer, offset, length, port, peerRelayID, [cb])`
 
 This relays the given buffer to the peer with `peerRelayID` by calling `peer.send(...)`. The signature for this method is similar to dgram's socket.send except the peer's id is used instead of the ip address. Port is also ignored, but is still required for compatibility reasons.
 
